@@ -1,5 +1,8 @@
 import Phaser from "phaser";
 
+import shipImg from "../assets/images/player-ship.png";
+import bulletImg from "../assets/images/bullet.png";
+
 class MainScene extends Phaser.Scene {
     constructor() {
         super("MainScene");
@@ -10,14 +13,15 @@ class MainScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image("ship", "assets/images/player-ship.png");
-        this.load.image("bullet", "assets/images/bullet.png");
+        this.load.image("ship", shipImg);
+        this.load.image("bullet", bulletImg);
     }
 
     create() {
         //create player ship
         this.player = this.physics.add.sprite(400, 500, "ship");
         this.player.setCollideWorldBounds(true);
+        this.player.setScale(0.2)
 
         //create bullet group
         this.bullets = this.physics.add.group({
@@ -61,6 +65,9 @@ class MainScene extends Phaser.Scene {
                 bullet.setVelocityY(-600);
                 bullet.setActive(true);
                 bullet.setVisible(true);
+
+                bullet.setScale(0.03);
+                bullet.setAngle(90);
 
                 this.lastFired = time + 200;
             }
