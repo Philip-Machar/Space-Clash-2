@@ -63,21 +63,6 @@ class MainScene extends Phaser.Scene {
             this.player.setAngle(180);
         }
 
-        //handle diagonal movement
-        if (this.cursors.up.isDown && this.cursors.left.isDown) {
-            this.player.setAngle(-45);
-            this.playerDirection = "upleft";
-        } else if (this.cursors.up.isDown && this.cursors.right.isDown) {
-            this.player.setAngle(45);
-            this.playerDirection = "upright";
-        } else if (this.cursors.down.isDown && this.cursors.left.isDown) {
-            this.player.setAngle(-135);
-            this.playerDirection = "downleft";
-        } else if (this.cursors.down.isDown && this.cursors.right.isDown) {
-            this.player.setAngle(135);
-            this.playerDirection = "downright";
-        }
-
         //handling shooting
         if (this.fireKey.isDown && time > this.lastFired) {
             const bullet = this.bullets.get();
