@@ -20,7 +20,7 @@ class MainScene extends Phaser.Scene {
 
     create() {
         //create player ship
-        this.player = this.physics.add.sprite(400, 500, "ship");
+        this.player = this.physics.add.sprite(this.cameras.main.centerX, this.cameras.main.centerY, "ship");
         this.player.setCollideWorldBounds(true);
         this.player.setScale(0.15)
 
@@ -99,7 +99,7 @@ class MainScene extends Phaser.Scene {
 
         //Deativating off screen bullets
         this.bullets.children.each((bullet) => {
-            if (bullet.active && (bullet.y < 0 || bullet.y > 600 || bullet.x < 0 || bullet.x > 800)) {
+            if (bullet.active && (bullet.y < 0 || bullet.y > window.innerHeight || bullet.x < 0 || bullet.x > window.innerWidth)) {
                 bullet.setActive(false);
                 bullet.setVisible(false);
             }

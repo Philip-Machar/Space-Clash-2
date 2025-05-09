@@ -1,11 +1,15 @@
-import Phaser from "phaser";
+import Phaser, { Scale } from "phaser";
 import MainScene from "./scenes/MainScene";
 
 const config = {
     type: Phaser.AUTO,
-    width: 800, 
-    height: 600,
+    width: window.innerWidth, 
+    height: window.innerHeight,
     parent: "game",
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH, 
+    },
     physics: {
         default: "arcade",
         arcade: {
