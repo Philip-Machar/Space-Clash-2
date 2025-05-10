@@ -14,6 +14,12 @@ class MainScene extends Phaser.Scene {
         this.lastEnemySpawn = 0;
         this.cursors = null;
         this.playerDirection = "up";
+
+        //player health variables
+        this.playerHealth = 3;
+        this.invulnerable = false;
+        this.invulnerabilityTime = 1000;
+        this.healthText = null;
     }
 
     preload() {
@@ -47,6 +53,15 @@ class MainScene extends Phaser.Scene {
 
         //set up collision between bullets and aliens
         this.physics.add.collider(this.bullets, this.aliens, this.bulletHitAlien, null, this);
+
+        //set up collision between alien and player
+        this.physics.add.collider(this.player, this.aliens, this.alienHitPlayer, null, this);
+
+        //display health text
+        this.healthText = this.add.text(20, 20, `Health: ${this.playerHealth}`, {
+            fontSize: "24px",
+            fill: "#ffffff"
+        });
     }
 
     update(time) {
@@ -230,6 +245,70 @@ class MainScene extends Phaser.Scene {
         alien.setActive(false);
         alien.setVisible(false);
         alien.destroy();
+    }
+
+    alienHitPlayer(player, alien) {
+        if (!this.invulnerable) {
+            //decrement the health score by 1
+            this.playerHealth--;
+
+            //update health text
+            this.healthText.setText(`Health: ${this.playerHealth}`);
+
+            //make player briefly flash to indicate damage
+            this.tweens.add({
+                targets: player,
+                alpha: 0.5,
+                yoyo: true,
+                repeat: 5,
+                duration: 100,
+                onComplete: () => {
+                    player.alpha = 1;
+                }
+            })
+
+            //make player invulnerable briefly(1 second)
+            this.invulnerable = true;
+            this.time.delayedCall(this.invulnerabilityTime, () => {
+                this.invulnerable = false;
+            });
+
+            //destroy the enemy that hit you
+            alien.setActive(false);
+            alien.setVisible(false);
+            alien.destroy();
+
+            //check if the game is over
+            if (this.playerHealth <= 0) {
+                this.gameOver();
+            }
+        }
+    }
+
+    gameOver() {
+        //stop all movement
+        this.physics.pause();
+
+        // Game over text
+        const gameOverText = this.add.text(
+            this.cameras.main.centerX, 
+            this.cameras.main.centerY, 
+            'GAME OVER', 
+            { fontSize: '64px', fill: '#ff0000' }
+        ).setOrigin(0.5);
+
+        // Restart text
+        const restartText = this.add.text(
+            this.cameras.main.centerX,
+            this.cameras.main.centerY + 70,
+            'Press SPACE to restart',
+            { fontSize: '24px', fill: '#ffffff' }
+        ).setOrigin(0.5);
+
+        //set up restart key
+        this.input.keyboard.once("keydown-SPACE", () => {
+            this.scene.restart();
+        });
     }
 }
 
