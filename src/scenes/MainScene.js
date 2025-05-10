@@ -2,13 +2,16 @@ import Phaser from "phaser";
 
 import shipImg from "../assets/images/player-ship.png";
 import bulletImg from "../assets/images/bullet.png";
+import alienImg from "../assets/images/alien.png";
 
 class MainScene extends Phaser.Scene {
     constructor() {
         super("MainScene");
         this.player = null;
         this.bullets = null;
+        this.aliens = null;
         this.lastFired = 0;
+        this.lastEnemySpawn = 0;
         this.cursors = null;
         this.playerDirection = "up";
     }
@@ -16,6 +19,7 @@ class MainScene extends Phaser.Scene {
     preload() {
         this.load.image("ship", shipImg);
         this.load.image("bullet", bulletImg);
+        this.load.image("alien", alienImg);
     }
 
     create() {
@@ -31,14 +35,22 @@ class MainScene extends Phaser.Scene {
             maxSize: 30
         });
 
+        //create aliens group
+        this.aliens = this.physics.add.group({
+            classType: Phaser.Physics.Arcade.Sprite,
+            defaultKey: "alien"
+        });
+
         //set up keyboard controls
         this.cursors = this.input.keyboard.createCursorKeys();
         this.fireKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+        //set up collision between bullets and aliens
+        this.physics.add.collider(this.bullets, this.aliens, this.bulletHitAlien, null, this);
     }
 
     update(time) {
         //handle player movement
-
         this.player.setVelocity(0);
 
         //left right movement
@@ -69,10 +81,8 @@ class MainScene extends Phaser.Scene {
             const speed = 600;
 
             if (bullet) {
-                bullet.setVelocityY(-1000);
                 bullet.setActive(true);
                 bullet.setVisible(true);
-
                 bullet.setScale(0.02);
                 
                 if (this.playerDirection === "up") {
@@ -97,7 +107,7 @@ class MainScene extends Phaser.Scene {
             }
         }
 
-        //Deativating off screen bullets
+        //Deactivating off screen bullets
         this.bullets.children.each((bullet) => {
             if (bullet.active && (bullet.y < 0 || bullet.y > window.innerHeight || bullet.x < 0 || bullet.x > window.innerWidth)) {
                 bullet.setActive(false);
@@ -105,6 +115,121 @@ class MainScene extends Phaser.Scene {
             }
             return true;
         });
+
+        //Spawn enemies at intervals
+        if (time > this.lastEnemySpawn) {
+            this.spawnEnemy();
+            //Spawn every 1-3 seconds
+            this.lastEnemySpawn = time + Phaser.Math.Between(1000, 3000);
+        }
+
+        //Update enemy movement
+        this.aliens.children.each((alien) => {
+            if (alien.active) {
+                //Check if alien is off screen
+                if (alien.x < -50 || alien.x > this.cameras.main.width + 50 || 
+                    alien.y < -50 || alien.y > this.cameras.main.height + 50) {
+                    alien.setActive(false);
+                    alien.setVisible(false);
+                    alien.destroy();
+                    return true;
+                }
+                
+                // Only update target position occasionally (helps player dodge)
+                alien.timeSinceRetarget = (alien.timeSinceRetarget || 0) + this.game.loop.delta;
+                if (alien.timeSinceRetarget > 1000) { // Update target every second
+                    alien.targetX = this.player.x;
+                    alien.targetY = this.player.y;
+                    alien.timeSinceRetarget = 0;
+                }
+                
+                // Calculate direction vector toward player with curve influence
+                let dx = this.player.x - alien.x;
+                let dy = this.player.y - alien.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Normalize direction
+                if (distance > 0) {
+                    dx = dx / distance;
+                    dy = dy / distance;
+                    
+                    // Add curve influence (perpendicular vector)
+                    const perpX = -dy * alien.curveStrength; // Perpendicular is (-dy, dx)
+                    const perpY = dx * alien.curveStrength;
+                    
+                    // Apply curve based on alien's curve direction
+                    dx += perpX * alien.curveDir;
+                    dy += perpY * alien.curveDir;
+                    
+                    // Normalize again after adding curve
+                    const newDist = Math.sqrt(dx * dx + dy * dy);
+                    if (newDist > 0) {
+                        dx = dx / newDist;
+                        dy = dy / newDist;
+                    }
+                    
+                    // Set velocity based on direction and speed
+                    alien.setVelocity(dx * alien.speed, dy * alien.speed);
+                    
+                    // Update rotation to face direction of travel
+                    alien.rotation = Math.atan2(dy, dx) + Math.PI/2;
+                }
+            }
+            return true;
+        });
+    }
+
+    spawnEnemy() {
+        //Choose a random side to spawn from (0: top, 1: right, 2: bottom, 3: left)
+        const side = Phaser.Math.Between(0, 3);
+        
+        let x, y;
+        
+        //Determine spawn position based on side
+        switch (side) {
+            case 0: //top
+                x = Phaser.Math.Between(0, this.cameras.main.width);
+                y = -30;
+                break;
+            case 1: //right
+                x = this.cameras.main.width + 30;
+                y = Phaser.Math.Between(0, this.cameras.main.height);
+                break;
+            case 2: //bottom
+                x = Phaser.Math.Between(0, this.cameras.main.width);
+                y = this.cameras.main.height + 30;
+                break;
+            case 3: //left
+                x = -30;
+                y = Phaser.Math.Between(0, this.cameras.main.height);
+                break;
+        }
+        
+        //Create alien
+        const alien = this.aliens.create(x, y, 'alien');
+        
+        alien.setActive(true);
+        alien.setVisible(true);
+        alien.setScale(0.1);
+        
+        // Set movement properties
+        alien.speed = Phaser.Math.Between(80, 120);
+        alien.curveDir = Math.random() > 0.5 ? 1 : -1; 
+        alien.curveStrength = Phaser.Math.FloatBetween(0.3, 0.7);
+        alien.timeSinceRetarget = Phaser.Math.Between(0, 800);
+        
+        // Initial target is current player position
+        alien.targetX = this.player.x;
+        alien.targetY = this.player.y;
+    }
+
+    bulletHitAlien(bullet, alien) {
+        bullet.setActive(false);
+        bullet.setVisible(false);
+        
+        alien.setActive(false);
+        alien.setVisible(false);
+        alien.destroy();
     }
 }
 
