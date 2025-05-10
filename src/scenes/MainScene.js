@@ -68,26 +68,47 @@ class MainScene extends Phaser.Scene {
         //handle player movement
         this.player.setVelocity(0);
 
+        //tracks if any arrow key is pressed
+        let movementKeyPressed = false;
+
+        //angle to change ship's direction initially set to ship's angle
+        let targetAngle = this.player.angle;
+
         //left right movement
         if (this.cursors.left.isDown) {
             this.player.setVelocityX(-300);
             this.playerDirection = "left"
-            this.player.setAngle(-90);
+            targetAngle = -90
+            movementKeyPressed = true;
         } else if (this.cursors.right.isDown) {
             this.player.setVelocityX(300);
             this.playerDirection = "right"
-            this.player.setAngle(90);
+            targetAngle = 90
+            movementKeyPressed = true;
         }
 
         //up down movement
         if (this.cursors.up.isDown) {
             this.player.setVelocityY(-300);
             this.playerDirection = "up"
-            this.player.setAngle(0);
+            targetAngle = 0;
+            movementKeyPressed = true;
         } else if (this.cursors.down.isDown) {
             this.player.setVelocityY(300);
             this.playerDirection = "down"
-            this.player.setAngle(180);
+            targetAngle = 180;
+            movementKeyPressed = true;
+        }
+
+        //smooth ship rotation mechanism
+        if (movementKeyPressed) {
+            let angleDiff = targetAngle - this.player.angle;
+
+            // Normalize the angle difference to be between -180 and 180 degrees
+            if (angleDiff > 180) angleDiff -= 360;
+            if (angleDiff < -180) angleDiff += 360;
+
+            this.player.angle += angleDiff / 5;
         }
 
         //handling shooting
