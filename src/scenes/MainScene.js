@@ -12,6 +12,8 @@ class MainScene extends Phaser.Scene {
         this.aliens = null;
         this.lastFired = 0;
         this.lastEnemySpawn = 0;
+        this.deadAlienCount = 0;
+        this.healthText = null;
         this.cursors = null;
         this.playerDirection = "up";
 
@@ -38,13 +40,19 @@ class MainScene extends Phaser.Scene {
         this.bullets = this.physics.add.group({
             classType: Phaser.Physics.Arcade.Image,
             defaultKey: "bullet",
-            maxSize: 30
+            maxSize: 30,
+            createCallback: (bullet) => {
+                bullet.setScale(0.02)
+            }
         });
 
         //create aliens group
         this.aliens = this.physics.add.group({
             classType: Phaser.Physics.Arcade.Sprite,
-            defaultKey: "alien"
+            defaultKey: "alien",
+            createCallback: (alien) => {
+                alien.setScale(0.1);
+            }
         });
 
         //set up keyboard controls
@@ -62,6 +70,12 @@ class MainScene extends Phaser.Scene {
             fontSize: "24px",
             fill: "#ffffff"
         });
+
+        //display number of aliens killed
+        this.deadAlienCountText = this.add.text(20, 60, `Aliens killed: ${this.deadAlienCount}`, {
+            fontSize: "24px",
+            fill: "#ffffff"
+        })
     }
 
     update(time) {
@@ -119,7 +133,6 @@ class MainScene extends Phaser.Scene {
             if (bullet) {
                 bullet.setActive(true);
                 bullet.setVisible(true);
-                bullet.setScale(0.02);
                 
                 if (this.playerDirection === "up") {
                     bullet.setPosition(this.player.x, this.player.y - 20);
@@ -159,7 +172,7 @@ class MainScene extends Phaser.Scene {
             this.lastEnemySpawn = time + Phaser.Math.Between(1000, 3000);
         }
 
-        //Update enemy movement
+        //Update enemy movement - OPTIMIZED VERSION
         this.aliens.children.each((alien) => {
             if (alien.active) {
                 //Check if alien is off screen
@@ -171,44 +184,57 @@ class MainScene extends Phaser.Scene {
                     return true;
                 }
                 
-                // Only update target position occasionally (helps player dodge)
-                alien.timeSinceRetarget = (alien.timeSinceRetarget || 0) + this.game.loop.delta;
-                if (alien.timeSinceRetarget > 1000) { // Update target every second
+                // Initialize timestamps if needed
+                alien.timeSinceRetarget = alien.timeSinceRetarget || 0;
+                alien.timeSinceRetarget += this.game.loop.delta;
+                
+                // Only perform expensive calculations when it's time to retarget
+                // This significantly reduces per-frame computational load
+                if (alien.timeSinceRetarget > 1000) { // Update target and movement vector every second
+                    // Store player position
                     alien.targetX = this.player.x;
                     alien.targetY = this.player.y;
+                    
+                    // Calculate and cache direction vector toward player
+                    let dx = this.player.x - alien.x;
+                    let dy = this.player.y - alien.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // Normalize direction
+                    if (distance > 0) {
+                        dx = dx / distance;
+                        dy = dy / distance;
+                        
+                        // Add curve influence (perpendicular vector)
+                        const perpX = -dy * alien.curveStrength;
+                        const perpY = dx * alien.curveStrength;
+                        
+                        // Apply curve based on alien's curve direction
+                        dx += perpX * alien.curveDir;
+                        dy += perpY * alien.curveDir;
+                        
+                        // Normalize again after adding curve
+                        const newDist = Math.sqrt(dx * dx + dy * dy);
+                        if (newDist > 0) {
+                            dx = dx / newDist;
+                            dy = dy / newDist;
+                        }
+                        
+                        // Cache the calculated direction
+                        alien.dirX = dx;
+                        alien.dirY = dy;
+                        
+                        // Update rotation to face direction of travel
+                        alien.rotation = Math.atan2(dy, dx) + Math.PI/2;
+                    }
+                    
                     alien.timeSinceRetarget = 0;
                 }
                 
-                // Calculate direction vector toward player with curve influence
-                let dx = this.player.x - alien.x;
-                let dy = this.player.y - alien.y;
-                let distance = Math.sqrt(dx * dx + dy * dy);
-                
-                // Normalize direction
-                if (distance > 0) {
-                    dx = dx / distance;
-                    dy = dy / distance;
-                    
-                    // Add curve influence (perpendicular vector)
-                    const perpX = -dy * alien.curveStrength; // Perpendicular is (-dy, dx)
-                    const perpY = dx * alien.curveStrength;
-                    
-                    // Apply curve based on alien's curve direction
-                    dx += perpX * alien.curveDir;
-                    dy += perpY * alien.curveDir;
-                    
-                    // Normalize again after adding curve
-                    const newDist = Math.sqrt(dx * dx + dy * dy);
-                    if (newDist > 0) {
-                        dx = dx / newDist;
-                        dy = dy / newDist;
-                    }
-                    
-                    // Set velocity based on direction and speed
-                    alien.setVelocity(dx * alien.speed, dy * alien.speed);
-                    
-                    // Update rotation to face direction of travel
-                    alien.rotation = Math.atan2(dy, dx) + Math.PI/2;
+                // Use the cached direction vector for movement every frame
+                // This avoids expensive calculations on every frame
+                if (alien.dirX !== undefined && alien.dirY !== undefined) {
+                    alien.setVelocity(alien.dirX * alien.speed, alien.dirY * alien.speed);
                 }
             }
             return true;
@@ -246,17 +272,34 @@ class MainScene extends Phaser.Scene {
         
         alien.setActive(true);
         alien.setVisible(true);
-        alien.setScale(0.1);
         
         // Set movement properties
         alien.speed = Phaser.Math.Between(80, 120);
         alien.curveDir = Math.random() > 0.5 ? 1 : -1; 
         alien.curveStrength = Phaser.Math.FloatBetween(0.3, 0.7);
+        
+        // Initialize with random retarget time offset to prevent all aliens
+        // from updating vectors in the same frame
         alien.timeSinceRetarget = Phaser.Math.Between(0, 800);
         
-        // Initial target is current player position
+        // Force initial target calculation on first update
         alien.targetX = this.player.x;
         alien.targetY = this.player.y;
+        
+        // Calculate initial direction immediately to avoid undefined movement
+        let dx = this.player.x - alien.x;
+        let dy = this.player.y - alien.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance > 0) {
+            alien.dirX = dx / distance;
+            alien.dirY = dy / distance;
+            alien.rotation = Math.atan2(alien.dirY, alien.dirX) + Math.PI/2;
+        } else {
+            // Fallback to a default direction if spawned exactly on player
+            alien.dirX = 0;
+            alien.dirY = -1;
+        }
     }
 
     bulletHitAlien(bullet, alien) {
@@ -266,6 +309,9 @@ class MainScene extends Phaser.Scene {
         alien.setActive(false);
         alien.setVisible(false);
         alien.destroy();
+
+        this.deadAlienCount += 1;
+        this.deadAlienCountText.setText(`Aliens killed: ${this.deadAlienCount}`);
     }
 
     alienHitPlayer(player, alien) {
@@ -298,38 +344,7 @@ class MainScene extends Phaser.Scene {
             alien.setActive(false);
             alien.setVisible(false);
             alien.destroy();
-
-            //check if the game is over
-            if (this.playerHealth <= 0) {
-                this.gameOver();
-            }
         }
-    }
-
-    gameOver() {
-        //stop all movement
-        this.physics.pause();
-
-        // Game over text
-        const gameOverText = this.add.text(
-            this.cameras.main.centerX, 
-            this.cameras.main.centerY, 
-            'GAME OVER', 
-            { fontSize: '64px', fill: '#ff0000' }
-        ).setOrigin(0.5);
-
-        // Restart text
-        const restartText = this.add.text(
-            this.cameras.main.centerX,
-            this.cameras.main.centerY + 70,
-            'Press SPACE to restart',
-            { fontSize: '24px', fill: '#ffffff' }
-        ).setOrigin(0.5);
-
-        //set up restart key
-        this.input.keyboard.once("keydown-SPACE", () => {
-            this.scene.restart();
-        });
     }
 }
 
