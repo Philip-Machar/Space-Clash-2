@@ -1,22 +1,28 @@
-import Phaser, { Scale } from "phaser";
+import Phaser from "phaser";
 import MainScene from "./scenes/MainScene";
 
 const config = {
     type: Phaser.AUTO,
-    width: window.innerWidth, 
-    height: window.innerHeight,
+    width: 1280,
+    height: 720,
     parent: "game",
     scale: {
         mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_BOTH, 
+        autoCenter: Phaser.Scale.CENTER_BOTH
     },
     physics: {
         default: "arcade",
         arcade: {
             gravity: {y: 0},
-            debug: false
+            debug: false,
+            fps: 60 
         }
     },
+    render: {
+        pixelArt: true,
+        antialias: false  
+    },
+    backgroundColor: "#000000",
     scene: [MainScene]
 };
 
