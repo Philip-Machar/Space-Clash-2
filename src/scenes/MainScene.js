@@ -320,6 +320,10 @@ class MainScene extends Phaser.Scene {
     }
 
     bulletHitAlien(bullet, alien) {
+        if (!bullet.active || !alien.active) {
+            return;
+        }
+
         bullet.setActive(false);
         bullet.setVisible(false);
         
