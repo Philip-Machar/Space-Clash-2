@@ -47,6 +47,9 @@ class MainScene extends Phaser.Scene {
         this.player.setCollideWorldBounds(true);
         this.player.setScale(0.15)
 
+        // Adjust player's physics body to better collide witht the aliens
+        this.player.body.setSize(this.player.width * 0.6, this.player.height * 0.6, true);
+
         //track player's last position
         this.lastPlayerPosition = {x: this.player.x, y: this.player.y};
 
@@ -75,6 +78,7 @@ class MainScene extends Phaser.Scene {
             maxSize: this.settings.maxAliens,
             createCallback: (alien) => {
                 alien.setScale(0.5);
+                alien.body.setSize(alien.width * 0.8, alien.height * 0.8, true);
                 alien.play('alien-animate');
             }
         });
