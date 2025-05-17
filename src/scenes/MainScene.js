@@ -35,7 +35,10 @@ class MainScene extends Phaser.Scene {
     preload() {
         this.load.image("ship", shipImg);
         this.load.image("bullet", bulletImg);
-        this.load.image("alien", alienImg);
+        this.load.spritesheet("alien", alienImg, {
+            frameWidth: 128,
+            frameHeight: 128
+        });
     }
 
     create() {
@@ -57,13 +60,22 @@ class MainScene extends Phaser.Scene {
             }
         });
 
+        // Create animation for aliens
+        this.anims.create({
+            key: "alien-animate",
+            frames: this.anims.generateFrameNumbers("alien", {start: 0, end: 35}),
+            frameRate: 24,
+            repeat: -1
+        });
+
         //create aliens group
         this.aliens = this.physics.add.group({
             classType: Phaser.Physics.Arcade.Sprite,
             defaultKey: "alien",
             maxSize: this.settings.maxAliens,
             createCallback: (alien) => {
-                alien.setScale(0.1);
+                alien.setScale(0.5);
+                alien.play('alien-animate');
             }
         });
 
@@ -296,6 +308,9 @@ class MainScene extends Phaser.Scene {
         alien.setActive(true);
         alien.setVisible(true);
         
+        // Start animation on this alien
+        alien.play('alien-animate');
+        
         // Set movement properties
         alien.speed = Phaser.Math.Between(80, 120);
         alien.curveDir = Math.random() > 0.5 ? 1 : -1; 
@@ -368,6 +383,3 @@ class MainScene extends Phaser.Scene {
 }
 
 export default MainScene;
-
-
-
