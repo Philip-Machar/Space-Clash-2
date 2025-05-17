@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 
-import shipImg from "../assets/images/player-ship.png";
+import shipImg from "../assets/images/space-ship1.png";
 import bulletImg from "../assets/images/bullet.png";
 import alienImg from "../assets/images/alien.png";
 
@@ -26,7 +26,7 @@ class MainScene extends Phaser.Scene {
         //game settings
         this.settings = {
             maxAliens: 20,
-            alienUpdateInterval: 300,
+            alienUpdateInterval: 100,
             bulletFireRate: 200,
             enemySpawnRate: [1000, 3000]
         }
@@ -45,10 +45,12 @@ class MainScene extends Phaser.Scene {
         //create player
         this.player = this.physics.add.sprite(this.cameras.main.centerX, this.cameras.main.centerY, "ship");
         this.player.setCollideWorldBounds(true);
-        this.player.setScale(0.15)
+        this.player.setScale(0.1)
 
         // Adjust player's physics body to better collide witht the aliens
-        this.player.body.setSize(this.player.width * 0.6, this.player.height * 0.6, true);
+        this.player.body.setSize(this.player.width * 0.95, this.player.height * 0.95, true);
+
+        // this.physics.world.createDebugGraphic()
 
         //track player's last position
         this.lastPlayerPosition = {x: this.player.x, y: this.player.y};
@@ -316,7 +318,7 @@ class MainScene extends Phaser.Scene {
         alien.play('alien-animate');
         
         // Set movement properties
-        alien.speed = Phaser.Math.Between(80, 120);
+        alien.speed = Phaser.Math.Between(50, 90);
         alien.curveDir = Math.random() > 0.5 ? 1 : -1; 
         alien.curveStrength = Phaser.Math.FloatBetween(0.3, 0.7);
         
