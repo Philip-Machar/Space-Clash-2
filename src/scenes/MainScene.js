@@ -3,11 +3,13 @@ import Phaser from "phaser";
 import shipImg from "../assets/images/space-ship1.png";
 import bulletImg from "../assets/images/bullet.png";
 import alienImg from "../assets/images/alien.png";
+import thrustImg from "../assets/images/thrust.png";
 
 class MainScene extends Phaser.Scene {
     constructor() {
         super("MainScene");
         this.player = null;
+        this.thrustFlame = null;
         this.bullets = null;
         this.aliens = null;
         this.lastFired = 0;
@@ -35,6 +37,7 @@ class MainScene extends Phaser.Scene {
     preload() {
         this.load.image("ship", shipImg);
         this.load.image("bullet", bulletImg);
+        this.load.image("thrust", thrustImg);
         this.load.spritesheet("alien", alienImg, {
             frameWidth: 128,
             frameHeight: 128
@@ -45,12 +48,16 @@ class MainScene extends Phaser.Scene {
         //create player
         this.player = this.physics.add.sprite(this.cameras.main.centerX, this.cameras.main.centerY, "ship");
         this.player.setCollideWorldBounds(true);
-        this.player.setScale(0.1)
+        this.player.setScale(0.1);
 
-        // Adjust player's physics body to better collide witht the aliens
+        // Create the thrust flame as a simple image
+        this.thrustFlame = this.add.image(this.player.x, this.player.y, "thrust");
+        this.thrustFlame.setScale(0.09);
+        this.thrustFlame.setOrigin(0.5, 0);  // Set origin to center-top for easier positioning
+        this.thrustFlame.setVisible(false);  // Hidden by default until movement
+
+        // Adjust player's physics body to better collide with the aliens
         this.player.body.setSize(this.player.width * 0.95, this.player.height * 0.95, true);
-
-        // this.physics.world.createDebugGraphic()
 
         //track player's last position
         this.lastPlayerPosition = {x: this.player.x, y: this.player.y};
@@ -163,6 +170,17 @@ class MainScene extends Phaser.Scene {
             this.player.angle += angleDiff / 5;
         }
 
+        // Handle thrust flame visibility and position
+        if (movementKeyPressed) {
+            this.thrustFlame.setVisible(true);
+            
+            // Position and rotate the thrust flame based on player direction
+            this.updateThrustPosition();
+        } else {
+            // Hide the thrust flame when not moving
+            this.thrustFlame.setVisible(false);
+        }
+
         //track player position change for alien targetting optimization
         if (this.player.x !== this.lastPlayerPosition.x || this.player.y !== this.lastPlayerPosition.y) {
             this.lastPlayerPosition = {x: this.player.x, y: this.player.y};
@@ -226,6 +244,27 @@ class MainScene extends Phaser.Scene {
             }
             return true;
         });
+    }
+
+    // Update the thrust flame position based on player position and direction
+    updateThrustPosition() {
+        // Get the ship's current angle in radians
+        const angleRad = Phaser.Math.DegToRad(this.player.angle);
+        
+        // Calculate offset position behind the ship based on its current rotation
+        // Negative sign reverses the direction to position flames at the back of the ship
+        const offset = 15; // Distance from ship center to flame position
+        const offsetX = -Math.sin(angleRad) * offset; // X component of offset (reversed)
+        const offsetY = Math.cos(angleRad) * offset; // Y component of offset (reversed)
+        
+        // Position the thrust flame behind the ship based on calculated offset
+        this.thrustFlame.setPosition(
+            this.player.x + offsetX,
+            this.player.y + offsetY
+        );
+        
+        // Match the flame's rotation to the ship's rotation
+        this.thrustFlame.setAngle(this.player.angle);
     }
 
     //Update enemy movement - OPTIMIZED VERSION
@@ -389,6 +428,3 @@ class MainScene extends Phaser.Scene {
 }
 
 export default MainScene;
-
-
-
