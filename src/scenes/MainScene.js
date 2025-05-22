@@ -48,19 +48,19 @@ class MainScene extends Phaser.Scene {
         //create player
         this.player = this.physics.add.sprite(this.cameras.main.centerX, this.cameras.main.centerY, "ship");
         this.player.setCollideWorldBounds(true);
-        this.player.setScale(0.1);
-
-        // Create the thrust flame as a simple image
-        this.thrustFlame = this.add.image(this.player.x, this.player.y, "thrust");
-        this.thrustFlame.setScale(0.09);
-        this.thrustFlame.setOrigin(0.5, 0);  // Set origin to center-top for easier positioning
-        this.thrustFlame.setVisible(false);  // Hidden by default until movement
+        this.player.setScale(0.09);
 
         // Adjust player's physics body to better collide with the aliens
         this.player.body.setSize(this.player.width * 0.95, this.player.height * 0.95, true);
 
         //track player's last position
         this.lastPlayerPosition = {x: this.player.x, y: this.player.y};
+
+        // Create the thrust flame as a simple image
+        this.thrustFlame = this.add.image(this.player.x, this.player.y, "thrust");
+        this.thrustFlame.setScale(0.07);
+        this.thrustFlame.setOrigin(0.5, 0);
+        this.thrustFlame.setVisible(false);  
 
         //create bullet group
         this.bullets = this.physics.add.group({
