@@ -25,6 +25,15 @@ class MainScene extends Phaser.Scene {
         this.invulnerabilityTime = 1000;
         this.healthText = null;
 
+        // Enhanced ship physics properties
+        this.shipPhysics = {
+            thrust: 800,           // Higher thrust for more responsive acceleration
+            maxSpeed: 300,         // Maximum velocity
+            drag: 0.96,            // Less drag for smoother movement (4% drag per frame)
+            rotationSpeed: 3,      // Degrees per frame for rotation smoothing
+            minVelocityThreshold: 3 // Below this velocity, set to 0
+        };
+
         // Parallax star system
         this.starLayers = [];
         this.lastPlayerPosition = {x: 0, y: 0};
@@ -57,6 +66,10 @@ class MainScene extends Phaser.Scene {
         this.player = this.physics.add.sprite(this.cameras.main.centerX, this.cameras.main.centerY, "ship");
         this.player.setCollideWorldBounds(true);
         this.player.setScale(0.09);
+
+        // Enhanced physics setup for more natural movement
+        this.player.setDrag(0); // We'll handle drag manually for better control
+        this.player.setMaxVelocity(this.shipPhysics.maxSpeed);
 
         // Adjust player's physics body to better collide with the aliens
         this.player.body.setSize(this.player.width * 0.95, this.player.height * 0.95, true);
@@ -245,62 +258,8 @@ class MainScene extends Phaser.Scene {
     }
 
     update(time) {
-        //handle player movement
-        this.player.setVelocity(0);
-
-        //tracks if any arrow key is pressed
-        let movementKeyPressed = false;
-
-        //angle to change ship's direction initially set to ship's angle
-        let targetAngle = this.player.angle;
-
-        //left right movement
-        if (this.cursors.left.isDown) {
-            this.player.setVelocityX(-300);
-            this.playerDirection = "left"
-            targetAngle = -90
-            movementKeyPressed = true;
-        } else if (this.cursors.right.isDown) {
-            this.player.setVelocityX(300);
-            this.playerDirection = "right"
-            targetAngle = 90
-            movementKeyPressed = true;
-        }
-
-        //up down movement
-        if (this.cursors.up.isDown) {
-            this.player.setVelocityY(-300);
-            this.playerDirection = "up"
-            targetAngle = 0;
-            movementKeyPressed = true;
-        } else if (this.cursors.down.isDown) {
-            this.player.setVelocityY(300);
-            this.playerDirection = "down"
-            targetAngle = 180;
-            movementKeyPressed = true;
-        }
-
-        //smooth ship rotation mechanism
-        if (movementKeyPressed) {
-            let angleDiff = targetAngle - this.player.angle;
-
-            // Normalize the angle difference to be between -180 and 180 degrees
-            if (angleDiff > 180) angleDiff -= 360;
-            if (angleDiff < -180) angleDiff += 360;
-
-            this.player.angle += angleDiff / 5;
-        }
-
-        // Handle thrust flame visibility and position
-        if (movementKeyPressed) {
-            this.thrustFlame.setVisible(true);
-            
-            // Position and rotate the thrust flame based on player direction
-            this.updateThrustPosition();
-        } else {
-            // Hide the thrust flame when not moving
-            this.thrustFlame.setVisible(false);
-        }
+        // Enhanced ship movement with physics-based momentum
+        this.handleShipMovement();
 
         // Update parallax star field
         this.updateStarField();
@@ -336,6 +295,22 @@ class MainScene extends Phaser.Scene {
                     bullet.setPosition(this.player.x + 20, this.player.y)
                     bullet.setVelocity(speed, 0);
                     bullet.setAngle(0);
+                } else if (this.playerDirection === "up-left") {
+                    bullet.setPosition(this.player.x - 14, this.player.y - 14);
+                    bullet.setVelocity(-speed * 0.707, -speed * 0.707);
+                    bullet.setAngle(135);
+                } else if (this.playerDirection === "up-right") {
+                    bullet.setPosition(this.player.x + 14, this.player.y - 14);
+                    bullet.setVelocity(speed * 0.707, -speed * 0.707);
+                    bullet.setAngle(45);
+                } else if (this.playerDirection === "down-left") {
+                    bullet.setPosition(this.player.x - 14, this.player.y + 14);
+                    bullet.setVelocity(-speed * 0.707, speed * 0.707);
+                    bullet.setAngle(225);
+                } else if (this.playerDirection === "down-right") {
+                    bullet.setPosition(this.player.x + 14, this.player.y + 14);
+                    bullet.setVelocity(speed * 0.707, speed * 0.707);
+                    bullet.setAngle(315);
                 }
 
                 this.lastFired = time + this.settings.bulletFireRate;
@@ -368,6 +343,121 @@ class MainScene extends Phaser.Scene {
             }
             return true;
         });
+    }
+
+    handleShipMovement() {
+        // Get current input state
+        const left = this.cursors.left.isDown;
+        const right = this.cursors.right.isDown;
+        const up = this.cursors.up.isDown;
+        const down = this.cursors.down.isDown;
+
+        // Calculate thrust direction based on input combinations
+        let thrustX = 0;
+        let thrustY = 0;
+        let movementKeyPressed = false;
+
+        // Handle input combinations properly for diagonal movement
+        if (left) thrustX -= 1;
+        if (right) thrustX += 1;
+        if (up) thrustY -= 1;
+        if (down) thrustY += 1;
+
+        // Check if any movement key is pressed
+        movementKeyPressed = (thrustX !== 0 || thrustY !== 0);
+
+        // Normalize diagonal movement to prevent faster diagonal speeds
+        if (thrustX !== 0 && thrustY !== 0) {
+            const length = Math.sqrt(thrustX * thrustX + thrustY * thrustY);
+            thrustX /= length;
+            thrustY /= length;
+        }
+
+        // Apply thrust as acceleration to current velocity
+        if (movementKeyPressed) {
+            const currentVelX = this.player.body.velocity.x;
+            const currentVelY = this.player.body.velocity.y;
+            
+            // Calculate thrust acceleration (frame-rate independent)
+            const thrustAccel = this.shipPhysics.thrust / 60; // Divide by 60 for consistent physics at 60fps
+            
+            // Add thrust to current velocity
+            const newVelX = currentVelX + (thrustX * thrustAccel);
+            const newVelY = currentVelY + (thrustY * thrustAccel);
+            
+            this.player.setVelocity(newVelX, newVelY);
+        }
+
+        // Apply drag/friction
+        const currentVelX = this.player.body.velocity.x;
+        const currentVelY = this.player.body.velocity.y;
+        
+        const draggedVelX = currentVelX * this.shipPhysics.drag;
+        const draggedVelY = currentVelY * this.shipPhysics.drag;
+        
+        // Stop micro-movements
+        const finalVelX = Math.abs(draggedVelX) < this.shipPhysics.minVelocityThreshold ? 0 : draggedVelX;
+        const finalVelY = Math.abs(draggedVelY) < this.shipPhysics.minVelocityThreshold ? 0 : draggedVelY;
+        
+        this.player.setVelocity(finalVelX, finalVelY);
+
+        // Update player direction and rotation based on VELOCITY, not input
+        // This makes the ship face the direction it's actually moving
+        const velX = this.player.body.velocity.x;
+        const velY = this.player.body.velocity.y;
+        const speed = Math.sqrt(velX * velX + velY * velY);
+
+        if (speed > 10) { // Only rotate if moving fast enough
+            // Calculate angle based on velocity direction
+            const velocityAngle = Math.atan2(velX, -velY) * (180 / Math.PI);
+            
+            // Smooth rotation towards velocity direction
+            let angleDiff = velocityAngle - this.player.angle;
+            
+            // Normalize angle difference
+            while (angleDiff > 180) angleDiff -= 360;
+            while (angleDiff < -180) angleDiff += 360;
+            
+            // Apply smooth rotation (faster rotation for more responsive feel)
+            this.player.angle += angleDiff * 0.15; // 15% of the difference each frame
+            
+            // Update player direction for bullet firing based on closest cardinal/diagonal direction
+            this.updatePlayerDirection(velocityAngle);
+        }
+
+        // Handle thrust flame
+        if (movementKeyPressed) {
+            this.thrustFlame.setVisible(true);
+            this.updateThrustPosition();
+        } else {
+            this.thrustFlame.setVisible(false);
+        }
+    }
+
+    // New method to determine player direction for bullet firing
+    updatePlayerDirection(angle) {
+        // Normalize angle to 0-360 range
+        while (angle < 0) angle += 360;
+        while (angle >= 360) angle -= 360;
+        
+        // Map angle to 8 directions (each 45 degree sector)
+        if (angle >= 337.5 || angle < 22.5) {
+            this.playerDirection = "up";
+        } else if (angle >= 22.5 && angle < 67.5) {
+            this.playerDirection = "up-right";
+        } else if (angle >= 67.5 && angle < 112.5) {
+            this.playerDirection = "right";
+        } else if (angle >= 112.5 && angle < 157.5) {
+            this.playerDirection = "down-right";
+        } else if (angle >= 157.5 && angle < 202.5) {
+            this.playerDirection = "down";
+        } else if (angle >= 202.5 && angle < 247.5) {
+            this.playerDirection = "down-left";
+        } else if (angle >= 247.5 && angle < 292.5) {
+            this.playerDirection = "left";
+        } else if (angle >= 292.5 && angle < 337.5) {
+            this.playerDirection = "up-left";
+        }
     }
 
     // Update the thrust flame position based on player position and direction
