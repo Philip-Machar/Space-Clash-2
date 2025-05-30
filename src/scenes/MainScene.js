@@ -25,6 +25,11 @@ class MainScene extends Phaser.Scene {
         this.invulnerabilityTime = 1000;
         this.healthText = null;
 
+        // Parallax star system
+        this.starLayers = [];
+        this.lastPlayerPosition = {x: 0, y: 0};
+        this.playerVelocity = {x: 0, y: 0};
+
         //game settings
         this.settings = {
             maxAliens: 20,
@@ -45,6 +50,9 @@ class MainScene extends Phaser.Scene {
     }
 
     create() {
+        // Create parallax star background first (so it renders behind everything)
+        this.createStarField();
+
         //create player
         this.player = this.physics.add.sprite(this.cameras.main.centerX, this.cameras.main.centerY, "ship");
         this.player.setCollideWorldBounds(true);
@@ -113,14 +121,127 @@ class MainScene extends Phaser.Scene {
         //display health text
         this.healthText = this.add.text(20, 20, `Health: ${this.playerHealth}`, {
             fontSize: "24px",
-            fill: "#ffffff"
+            fill: "#ffffff",
+            stroke: "#000000",
+            strokeThickness: 2
         });
 
         //display number of aliens killed
         this.deadAlienCountText = this.add.text(20, 60, `Aliens killed: ${this.deadAlienCount}`, {
             fontSize: "24px",
-            fill: "#ffffff"
+            fill: "#ffffff",
+            stroke: "#000000",
+            strokeThickness: 2
         })
+        
+    }
+
+    createStarField() {
+        // Create multiple layers of stars for parallax effect
+        const starLayerConfigs = [
+            // Distant stars (slowest parallax)
+            {
+                count: 150,
+                size: { min: 0.5, max: 1 },
+                alpha: { min: 0.3, max: 0.6 },
+                parallaxFactor: 0.02,
+                twinkle: true
+            },
+            // Mid-distance stars
+            {
+                count: 100,
+                size: { min: 1, max: 1.5 },
+                alpha: { min: 0.5, max: 0.8 },
+                parallaxFactor: 0.08,
+                twinkle: true
+            },
+            // Close stars (fastest parallax)
+            {
+                count: 50,
+                size: { min: 1.5, max: 2.5 },
+                alpha: { min: 0.7, max: 1.0 },
+                parallaxFactor: 0.15,
+                twinkle: false
+            }
+        ];
+
+        starLayerConfigs.forEach((config, layerIndex) => {
+            const starLayer = {
+                stars: [],
+                parallaxFactor: config.parallaxFactor
+            };
+
+            // Create stars for this layer
+            for (let i = 0; i < config.count; i++) {
+                const star = this.add.circle(
+                    Phaser.Math.Between(-200, this.cameras.main.width + 200),
+                    Phaser.Math.Between(-200, this.cameras.main.height + 200),
+                    Phaser.Math.FloatBetween(config.size.min, config.size.max),
+                    0xffffff
+                );
+
+                star.setAlpha(Phaser.Math.FloatBetween(config.alpha.min, config.alpha.max));
+                
+                // Add twinkling effect to some star layers
+                if (config.twinkle) {
+                    this.tweens.add({
+                        targets: star,
+                        alpha: star.alpha * 0.3,
+                        duration: Phaser.Math.Between(1000, 3000),
+                        yoyo: true,
+                        repeat: -1,
+                        delay: Phaser.Math.Between(0, 2000)
+                    });
+                }
+
+                // Store original position for parallax calculations
+                star.originalX = star.x;
+                star.originalY = star.y;
+                
+                starLayer.stars.push(star);
+            }
+
+            this.starLayers.push(starLayer);
+        });
+    }
+
+    updateStarField() {
+        // Calculate player movement delta
+        const deltaX = this.player.x - this.lastPlayerPosition.x;
+        const deltaY = this.player.y - this.lastPlayerPosition.y;
+
+        // Update each star layer with different parallax speeds
+        this.starLayers.forEach(layer => {
+            layer.stars.forEach(star => {
+                // Apply parallax movement (opposite to player movement)
+                star.x = star.originalX - (this.player.x - this.cameras.main.centerX) * layer.parallaxFactor;
+                star.y = star.originalY - (this.player.y - this.cameras.main.centerY) * layer.parallaxFactor;
+
+                // Wrap stars around screen edges for infinite scrolling
+                const screenBounds = {
+                    left: -100,
+                    right: this.cameras.main.width + 100,
+                    top: -100,
+                    bottom: this.cameras.main.height + 100
+                };
+
+                if (star.x < screenBounds.left) {
+                    star.x = screenBounds.right;
+                    star.originalX = star.x + (this.player.x - this.cameras.main.centerX) * layer.parallaxFactor;
+                } else if (star.x > screenBounds.right) {
+                    star.x = screenBounds.left;
+                    star.originalX = star.x + (this.player.x - this.cameras.main.centerX) * layer.parallaxFactor;
+                }
+
+                if (star.y < screenBounds.top) {
+                    star.y = screenBounds.bottom;
+                    star.originalY = star.y + (this.player.y - this.cameras.main.centerY) * layer.parallaxFactor;
+                } else if (star.y > screenBounds.bottom) {
+                    star.y = screenBounds.top;
+                    star.originalY = star.y + (this.player.y - this.cameras.main.centerY) * layer.parallaxFactor;
+                }
+            });
+        });
     }
 
     update(time) {
@@ -180,6 +301,9 @@ class MainScene extends Phaser.Scene {
             // Hide the thrust flame when not moving
             this.thrustFlame.setVisible(false);
         }
+
+        // Update parallax star field
+        this.updateStarField();
 
         //track player position change for alien targetting optimization
         if (this.player.x !== this.lastPlayerPosition.x || this.player.y !== this.lastPlayerPosition.y) {
@@ -428,7 +552,3 @@ class MainScene extends Phaser.Scene {
 }
 
 export default MainScene;
-
-
-
-
