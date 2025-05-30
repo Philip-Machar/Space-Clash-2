@@ -270,7 +270,7 @@ class MainScene extends Phaser.Scene {
             this.playerMoved = true;
         }
 
-        //handling shooting
+       //handling shooting
         if (this.fireKey.isDown && time > this.lastFired) {
             const bullet = this.bullets.get();
             const speed = 600;
@@ -282,35 +282,35 @@ class MainScene extends Phaser.Scene {
                 if (this.playerDirection === "up") {
                     bullet.setPosition(this.player.x, this.player.y - 20);
                     bullet.setVelocity(0, -speed);
-                    bullet.setAngle(90);
+                    bullet.setAngle(90); // Point upward (flipped)
                 } else if (this.playerDirection === "down") {
                     bullet.setPosition(this.player.x, this.player.y + 20);
                     bullet.setVelocity(0, speed);
-                    bullet.setAngle(270);
+                    bullet.setAngle(270); // Point downward (flipped)
                 } else if (this.playerDirection === "left") {
                     bullet.setPosition(this.player.x - 20, this.player.y)
                     bullet.setVelocity(-speed, 0)
-                    bullet.setAngle(180);
+                    bullet.setAngle(0); // Point left (flipped)
                 } else if (this.playerDirection === "right") {
                     bullet.setPosition(this.player.x + 20, this.player.y)
                     bullet.setVelocity(speed, 0);
-                    bullet.setAngle(0);
+                    bullet.setAngle(180); // Point right (flipped)
                 } else if (this.playerDirection === "up-left") {
                     bullet.setPosition(this.player.x - 14, this.player.y - 14);
                     bullet.setVelocity(-speed * 0.707, -speed * 0.707);
-                    bullet.setAngle(135);
+                    bullet.setAngle(45); // Tilted up-left (flipped)
                 } else if (this.playerDirection === "up-right") {
                     bullet.setPosition(this.player.x + 14, this.player.y - 14);
                     bullet.setVelocity(speed * 0.707, -speed * 0.707);
-                    bullet.setAngle(45);
+                    bullet.setAngle(135); // Tilted up-right (flipped)
                 } else if (this.playerDirection === "down-left") {
                     bullet.setPosition(this.player.x - 14, this.player.y + 14);
                     bullet.setVelocity(-speed * 0.707, speed * 0.707);
-                    bullet.setAngle(225);
+                    bullet.setAngle(315); // Tilted down-left (flipped)
                 } else if (this.playerDirection === "down-right") {
                     bullet.setPosition(this.player.x + 14, this.player.y + 14);
                     bullet.setVelocity(speed * 0.707, speed * 0.707);
-                    bullet.setAngle(315);
+                    bullet.setAngle(225); // Tilted down-right (flipped)
                 }
 
                 this.lastFired = time + this.settings.bulletFireRate;
