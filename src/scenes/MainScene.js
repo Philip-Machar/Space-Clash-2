@@ -42,7 +42,7 @@ class MainScene extends Phaser.Scene {
         //game settings
         this.settings = {
             maxAliens: 20,
-            alienUpdateInterval: 100,
+            alienUpdateInterval: 16.67,
             bulletFireRate: 200,
             enemySpawnRate: [1000, 3000]
         }
