@@ -171,7 +171,7 @@ class MainScene extends Phaser.Scene {
                         alpha: 0.6,  // More visible
                         x: this.cameras.main.width * 0.9,  // More to the edge
                         y: this.cameras.main.height * 0.15,
-                        parallaxFactor: 0.008  // Reduced from 0.015
+                        parallaxFactor: 0 
                     },
                     {
                         type: 'station',
@@ -179,7 +179,7 @@ class MainScene extends Phaser.Scene {
                         alpha: 0.5,  // More visible
                         x: this.cameras.main.width * 0.15,  // More to the edge
                         y: this.cameras.main.height * 0.8,
-                        parallaxFactor: 0.01   // Reduced from 0.02
+                        parallaxFactor: 0
                     },
                     // Add more asteroids for visual interest
                     {
@@ -191,7 +191,7 @@ class MainScene extends Phaser.Scene {
                         parallaxFactor: 0.015,  // Reduced from 0.025
                         rotation: {
                             startAngle: Phaser.Math.Between(0, 360),
-                            duration: Phaser.Math.Between(8000, 12000)
+                            duration: Phaser.Math.Between(15000, 20000)
                         }
                     },
                     {
@@ -203,7 +203,7 @@ class MainScene extends Phaser.Scene {
                         parallaxFactor: 0.012,  // Reduced from 0.018
                         rotation: {
                             startAngle: Phaser.Math.Between(0, 360),
-                            duration: Phaser.Math.Between(6000, 10000)
+                            duration: Phaser.Math.Between(12000, 18000)
                         }
                     }
                 ]
