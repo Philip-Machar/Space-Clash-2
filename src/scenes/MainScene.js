@@ -157,55 +157,71 @@ class MainScene extends Phaser.Scene {
 
     createStarField() {
         const starLayerConfigs = [
-            // Furthest layer (containing all space objects)
+            // Furthest layer (containing space objects)
             {
                 count: 150,
                 size: { min: 0.5, max: 1 },
                 alpha: { min: 0.3, max: 0.6 },
-                parallaxFactor: 0.01,
+                parallaxFactor: 0.005,  // Reduced from 0.01
                 twinkle: true,
                 spaceObjects: [
                     {
                         type: 'planet',
-                        scale: 0.3,
-                        alpha: 0.4,  // Make planet slightly transparent
-                        x: this.cameras.main.width * 0.8,
-                        y: this.cameras.main.height * 0.2,
-                        parallaxFactor: 0.015
+                        scale: 0.4,  // Slightly larger
+                        alpha: 0.6,  // More visible
+                        x: this.cameras.main.width * 0.9,  // More to the edge
+                        y: this.cameras.main.height * 0.15,
+                        parallaxFactor: 0.008  // Reduced from 0.015
                     },
                     {
                         type: 'station',
-                        scale: 0.3,
-                        alpha: 0.45,  // Make station slightly transparent
-                        x: this.cameras.main.width * 0.15,
-                        y: this.cameras.main.height * 0.7,
-                        parallaxFactor: 0.015
+                        scale: 0.35,  // Slightly smaller
+                        alpha: 0.5,  // More visible
+                        x: this.cameras.main.width * 0.15,  // More to the edge
+                        y: this.cameras.main.height * 0.8,
+                        parallaxFactor: 0.01   // Reduced from 0.02
+                    },
+                    // Add more asteroids for visual interest
+                    {
+                        type: 'asteroid',
+                        scale: 0.12,
+                        alpha: 0.6,
+                        x: this.cameras.main.width * 0.75,
+                        y: this.cameras.main.height * 0.3,
+                        parallaxFactor: 0.015,  // Reduced from 0.025
+                        rotation: {
+                            startAngle: Phaser.Math.Between(0, 360),
+                            duration: Phaser.Math.Between(8000, 12000)
+                        }
                     },
                     {
                         type: 'asteroid',
-                        scale: 0.1,
-                        alpha: 0.5,  // Make asteroid slightly transparent
-                        x: this.cameras.main.width * 0.6,
+                        scale: 0.08,
+                        alpha: 0.5,
+                        x: this.cameras.main.width * 0.25,
                         y: this.cameras.main.height * 0.4,
-                        parallaxFactor: 0.015,
-                        rotation: true
+                        parallaxFactor: 0.012,  // Reduced from 0.018
+                        rotation: {
+                            startAngle: Phaser.Math.Between(0, 360),
+                            duration: Phaser.Math.Between(6000, 10000)
+                        }
                     }
                 ]
             },
-            // Middle layer (empty now)
+            // Middle layer
             {
                 count: 100,
                 size: { min: 1, max: 1.5 },
                 alpha: { min: 0.5, max: 0.8 },
-                parallaxFactor: 0.08,
+                parallaxFactor: 0.03,  // Reduced from 0.08
                 twinkle: true
             },
-            // Closest layer (empty now)
+            // Closest layer
             {
                 count: 50,
                 size: { min: 1.5, max: 2.5 },
                 alpha: { min: 0.7, max: 1.0 },
-                parallaxFactor: 0.15,
+                parallaxFactor: 0.06,  // Reduced from 0.15
                 twinkle: false
             }
         ];
@@ -261,10 +277,11 @@ class MainScene extends Phaser.Scene {
                     
                     // Setup rotation for asteroid
                     if (objConfig.rotation) {
+                        spaceObj.setAngle(objConfig.rotation.startAngle);
                         this.tweens.add({
                             targets: spaceObj,
                             angle: 360,
-                            duration: 20000,
+                            duration: objConfig.rotation.duration,
                             repeat: -1
                         });
                     }
@@ -342,7 +359,7 @@ class MainScene extends Phaser.Scene {
        //handling shooting
         if (this.fireKey.isDown && time > this.lastFired) {
             const bullet = this.bullets.get();
-            const speed = 1000;
+            const speed = 800;
 
             if (bullet) {
                 bullet.setActive(true);
