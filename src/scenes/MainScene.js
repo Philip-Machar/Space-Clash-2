@@ -156,53 +156,57 @@ class MainScene extends Phaser.Scene {
     }
 
     createStarField() {
-        // Create multiple layers of stars for parallax effect
         const starLayerConfigs = [
-            // Furthest layer (planet)
+            // Furthest layer (containing all space objects)
             {
                 count: 150,
                 size: { min: 0.5, max: 1 },
                 alpha: { min: 0.3, max: 0.6 },
                 parallaxFactor: 0.01,
                 twinkle: true,
-                spaceObjects: [{
-                    type: 'planet',
-                    scale: 0.3,
-                    x: this.cameras.main.width * 0.8,
-                    y: this.cameras.main.height * 0.2,
-                    parallaxFactor: 0.015
-                }]
+                spaceObjects: [
+                    {
+                        type: 'planet',
+                        scale: 0.3,
+                        alpha: 0.4,  // Make planet slightly transparent
+                        x: this.cameras.main.width * 0.8,
+                        y: this.cameras.main.height * 0.2,
+                        parallaxFactor: 0.015
+                    },
+                    {
+                        type: 'station',
+                        scale: 0.3,
+                        alpha: 0.45,  // Make station slightly transparent
+                        x: this.cameras.main.width * 0.15,
+                        y: this.cameras.main.height * 0.7,
+                        parallaxFactor: 0.015
+                    },
+                    {
+                        type: 'asteroid',
+                        scale: 0.1,
+                        alpha: 0.5,  // Make asteroid slightly transparent
+                        x: this.cameras.main.width * 0.6,
+                        y: this.cameras.main.height * 0.4,
+                        parallaxFactor: 0.015,
+                        rotation: true
+                    }
+                ]
             },
-            // Mid-distance layer (space station)
+            // Middle layer (empty now)
             {
                 count: 100,
                 size: { min: 1, max: 1.5 },
                 alpha: { min: 0.5, max: 0.8 },
                 parallaxFactor: 0.08,
-                twinkle: true,
-                spaceObjects: [{
-                    type: 'station',
-                    scale: 0.3,
-                    x: this.cameras.main.width * 0.15,
-                    y: this.cameras.main.height * 0.7,
-                    parallaxFactor: 0.085
-                }]
+                twinkle: true
             },
-            // Closer layer (asteroid)
+            // Closest layer (empty now)
             {
                 count: 50,
                 size: { min: 1.5, max: 2.5 },
                 alpha: { min: 0.7, max: 1.0 },
                 parallaxFactor: 0.15,
-                twinkle: false,
-                spaceObjects: [{
-                    type: 'asteroid',
-                    scale: 0.1,
-                    x: this.cameras.main.width * 0.6,
-                    y: this.cameras.main.height * 0.4,
-                    parallaxFactor: 0.16,
-                    rotation: true
-                }]
+                twinkle: false
             }
         ];
 
@@ -248,7 +252,8 @@ class MainScene extends Phaser.Scene {
                 config.spaceObjects.forEach(objConfig => {
                     const spaceObj = this.add.image(objConfig.x, objConfig.y, objConfig.type)
                         .setScale(objConfig.scale)
-                        .setDepth(layerIndex);
+                        .setAlpha(objConfig.alpha || 1)  // Apply transparency
+                        .setDepth(-1);  // Make sure objects render behind everything
                     
                     // Store original position for parallax
                     spaceObj.originalX = spaceObj.x;
