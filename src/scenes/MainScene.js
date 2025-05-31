@@ -4,6 +4,9 @@ import shipImg from "../assets/images/space-ship1.png";
 import bulletImg from "../assets/images/bullet.png";
 import alienImg from "../assets/images/alien.png";
 import thrustImg from "../assets/images/thrust.png";
+import spaceStationImg from "../assets/images/space-station.png";
+import planetImg from "../assets/images/planet.png";
+import asteroidImg from "../assets/images/asteroid.png";
 
 class MainScene extends Phaser.Scene {
     constructor() {
@@ -56,6 +59,9 @@ class MainScene extends Phaser.Scene {
             frameWidth: 128,
             frameHeight: 128
         });
+        this.load.image("station", spaceStationImg);
+        this.load.image("planet", planetImg);
+        this.load.image("asteroid", asteroidImg);
     }
 
     create() {
@@ -97,7 +103,7 @@ class MainScene extends Phaser.Scene {
         this.anims.create({
             key: "alien-animate",
             frames: this.anims.generateFrameNumbers("alien", {start: 0, end: 35}),
-            frameRate: 24,
+            frameRate: 18,
             repeat: -1
         });
 
@@ -152,35 +158,58 @@ class MainScene extends Phaser.Scene {
     createStarField() {
         // Create multiple layers of stars for parallax effect
         const starLayerConfigs = [
-            // Distant stars (slowest parallax)
+            // Furthest layer (planet)
             {
                 count: 150,
                 size: { min: 0.5, max: 1 },
                 alpha: { min: 0.3, max: 0.6 },
-                parallaxFactor: 0.02,
-                twinkle: true
+                parallaxFactor: 0.01,
+                twinkle: true,
+                spaceObjects: [{
+                    type: 'planet',
+                    scale: 0.3,
+                    x: this.cameras.main.width * 0.8,
+                    y: this.cameras.main.height * 0.2,
+                    parallaxFactor: 0.015
+                }]
             },
-            // Mid-distance stars
+            // Mid-distance layer (space station)
             {
                 count: 100,
                 size: { min: 1, max: 1.5 },
                 alpha: { min: 0.5, max: 0.8 },
                 parallaxFactor: 0.08,
-                twinkle: true
+                twinkle: true,
+                spaceObjects: [{
+                    type: 'station',
+                    scale: 0.3,
+                    x: this.cameras.main.width * 0.15,
+                    y: this.cameras.main.height * 0.7,
+                    parallaxFactor: 0.085
+                }]
             },
-            // Close stars (fastest parallax)
+            // Closer layer (asteroid)
             {
                 count: 50,
                 size: { min: 1.5, max: 2.5 },
                 alpha: { min: 0.7, max: 1.0 },
                 parallaxFactor: 0.15,
-                twinkle: false
+                twinkle: false,
+                spaceObjects: [{
+                    type: 'asteroid',
+                    scale: 0.1,
+                    x: this.cameras.main.width * 0.6,
+                    y: this.cameras.main.height * 0.4,
+                    parallaxFactor: 0.16,
+                    rotation: true
+                }]
             }
         ];
 
         starLayerConfigs.forEach((config, layerIndex) => {
             const starLayer = {
                 stars: [],
+                spaceObjects: [],
                 parallaxFactor: config.parallaxFactor
             };
 
@@ -214,6 +243,34 @@ class MainScene extends Phaser.Scene {
                 starLayer.stars.push(star);
             }
 
+            // Add space objects for this layer
+            if (config.spaceObjects) {
+                config.spaceObjects.forEach(objConfig => {
+                    const spaceObj = this.add.image(objConfig.x, objConfig.y, objConfig.type)
+                        .setScale(objConfig.scale)
+                        .setDepth(layerIndex);
+                    
+                    // Store original position for parallax
+                    spaceObj.originalX = spaceObj.x;
+                    spaceObj.originalY = spaceObj.y;
+                    
+                    // Setup rotation for asteroid
+                    if (objConfig.rotation) {
+                        this.tweens.add({
+                            targets: spaceObj,
+                            angle: 360,
+                            duration: 20000,
+                            repeat: -1
+                        });
+                    }
+
+                    starLayer.spaceObjects.push({
+                        object: spaceObj,
+                        parallaxFactor: objConfig.parallaxFactor
+                    });
+                });
+            }
+
             this.starLayers.push(starLayer);
         });
     }
@@ -225,6 +282,7 @@ class MainScene extends Phaser.Scene {
 
         // Update each star layer with different parallax speeds
         this.starLayers.forEach(layer => {
+            // Update stars
             layer.stars.forEach(star => {
                 // Apply parallax movement (opposite to player movement)
                 star.x = star.originalX - (this.player.x - this.cameras.main.centerX) * layer.parallaxFactor;
@@ -254,6 +312,12 @@ class MainScene extends Phaser.Scene {
                     star.originalY = star.y + (this.player.y - this.cameras.main.centerY) * layer.parallaxFactor;
                 }
             });
+
+            // Update space objects
+            layer.spaceObjects.forEach(obj => {
+                obj.object.x = obj.object.originalX - (this.player.x - this.cameras.main.centerX) * obj.parallaxFactor;
+                obj.object.y = obj.object.originalY - (this.player.y - this.cameras.main.centerY) * obj.parallaxFactor;
+            });
         });
     }
 
@@ -273,7 +337,7 @@ class MainScene extends Phaser.Scene {
        //handling shooting
         if (this.fireKey.isDown && time > this.lastFired) {
             const bullet = this.bullets.get();
-            const speed = 600;
+            const speed = 1000;
 
             if (bullet) {
                 bullet.setActive(true);
