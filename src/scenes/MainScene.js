@@ -71,7 +71,7 @@ class MainScene extends Phaser.Scene {
         //create player
         this.player = this.physics.add.sprite(this.cameras.main.centerX, this.cameras.main.centerY, "ship");
         this.player.setCollideWorldBounds(true);
-        this.player.setScale(0.09);
+        this.player.setScale(0.08);
 
         // Enhanced physics setup for more natural movement
         this.player.setDrag(0); // We'll handle drag manually for better control
@@ -162,7 +162,7 @@ class MainScene extends Phaser.Scene {
                 count: 150,
                 size: { min: 0.5, max: 1 },
                 alpha: { min: 0.3, max: 0.6 },
-                parallaxFactor: 0.005,  // Reduced from 0.01
+                parallaxFactor: 0.015,  // Increased from 0.01
                 twinkle: true,
                 spaceObjects: [
                     {
@@ -188,7 +188,7 @@ class MainScene extends Phaser.Scene {
                         alpha: 0.6,
                         x: this.cameras.main.width * 0.75,
                         y: this.cameras.main.height * 0.3,
-                        parallaxFactor: 0.015,  // Reduced from 0.025
+                        parallaxFactor: 0.025,  // Increased from 0.02
                         rotation: {
                             startAngle: Phaser.Math.Between(0, 360),
                             duration: Phaser.Math.Between(15000, 20000)
@@ -200,7 +200,7 @@ class MainScene extends Phaser.Scene {
                         alpha: 0.5,
                         x: this.cameras.main.width * 0.25,
                         y: this.cameras.main.height * 0.4,
-                        parallaxFactor: 0.012,  // Reduced from 0.018
+                        parallaxFactor: 0.022,  // Increased from 0.018
                         rotation: {
                             startAngle: Phaser.Math.Between(0, 360),
                             duration: Phaser.Math.Between(12000, 18000)
@@ -213,7 +213,7 @@ class MainScene extends Phaser.Scene {
                 count: 100,
                 size: { min: 1, max: 1.5 },
                 alpha: { min: 0.5, max: 0.8 },
-                parallaxFactor: 0.03,  // Reduced from 0.08
+                parallaxFactor: 0.065,  // Increased from 0.05
                 twinkle: true
             },
             // Closest layer
@@ -221,7 +221,7 @@ class MainScene extends Phaser.Scene {
                 count: 50,
                 size: { min: 1.5, max: 2.5 },
                 alpha: { min: 0.7, max: 1.0 },
-                parallaxFactor: 0.06,  // Reduced from 0.15
+                parallaxFactor: 0.12,  // Increased from 0.1
                 twinkle: false
             }
         ];
