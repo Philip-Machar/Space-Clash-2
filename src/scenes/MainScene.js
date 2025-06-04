@@ -814,8 +814,24 @@ class MainScene extends Phaser.Scene {
         // Start animation based on alien type
         alien.play(`${alienType}-animate`);
         
-        // Set movement properties
-        alien.speed = Phaser.Math.Between(50, 90);
+        // Set movement properties with different speeds based on alien type
+        switch (alienType) {
+            case 'alien':
+                alien.speed = Phaser.Math.Between(50, 90);  // Original speed
+                break;
+            case 'alien2':
+                alien.speed = Phaser.Math.Between(80, 120); // Faster speed for wave 2 aliens
+                break;
+            case 'alien3':
+                alien.speed = Phaser.Math.Between(50, 90);  // Original speed
+                break;
+            case 'alien3-boss':
+                alien.speed = Phaser.Math.Between(40, 80);  // Slightly slower for boss
+                break;
+            default:
+                alien.speed = Phaser.Math.Between(50, 90);  // Default speed
+        }
+
         alien.curveDir = Math.random() > 0.5 ? 1 : -1; 
         alien.curveStrength = Phaser.Math.FloatBetween(0.3, 0.7);
         
