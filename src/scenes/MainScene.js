@@ -26,7 +26,7 @@ class MainScene extends Phaser.Scene {
         this.playerDirection = "up";
 
         //player health variables
-        this.playerHealth = 10;
+        this.playerHealth = 20;
         this.invulnerable = false;
         this.invulnerabilityTime = 1000;
         this.healthText = null;
@@ -69,6 +69,10 @@ class MainScene extends Phaser.Scene {
 
         // Transitioning flag to prevent multiple wave transitions
         this.transitioning = false;
+
+        // Wave progress bar elements
+        this.waveProgressBar = null;
+        this.waveProgressBarBg = null;
     }
 
     preload() {
@@ -230,6 +234,24 @@ class MainScene extends Phaser.Scene {
                 strokeThickness: 2
             }
         );
+
+        // Add wave progress bar background (gray bar)
+        this.waveProgressBarBg = this.add.rectangle(
+            this.cameras.main.width - 220,  // Position from right
+            30,                             // Position from top
+            200,                           // Width
+            20,                            // Height
+            0x666666                       // Gray color
+        );
+        
+        // Add wave progress bar (green bar)
+        this.waveProgressBar = this.add.rectangle(
+            this.waveProgressBarBg.x - this.waveProgressBarBg.width/2,  // Start from left edge
+            30,
+            0,                            // Start with 0 width
+            20,
+            0x00ff00                      // Green color
+        ).setOrigin(0, 0.5);             // Set origin to left center
 
         // Start wave system
         this.startWave(1);
@@ -704,6 +726,10 @@ class MainScene extends Phaser.Scene {
         this.waveActive = true;
         this.waveTimer = this.time.now + this.waveDuration;
         
+        // Reset progress bar
+        this.waveProgressBar.width = this.waveProgressBarBg.width;
+        this.waveProgressBar.setFillStyle(0x00ff00); // Same green color
+        
         // Update wave counter text
         this.waveCounterText.setText(`Wave: ${this.currentWave}/3`);
         
@@ -753,6 +779,15 @@ class MainScene extends Phaser.Scene {
         if (time > this.waveTimer) {
             this.waveActive = false;
         }
+
+        // Update progress bar
+        const elapsed = Math.max(0, this.waveTimer - time);
+        const progress = elapsed / this.waveDuration;
+        const barWidth = this.waveProgressBarBg.width * progress;
+        this.waveProgressBar.width = barWidth;
+
+        // Keep a consistent color
+        this.waveProgressBar.setFillStyle(0x00ff00); // Consistent green color
     }
 
     spawnEnemy() {
