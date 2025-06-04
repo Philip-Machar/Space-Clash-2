@@ -885,13 +885,32 @@ class MainScene extends Phaser.Scene {
 
     alienHitPlayer(player, alien) {
         if (!this.invulnerable) {
-            //decrement the health score by 1
-            this.playerHealth--;
+            // Determine damage based on alien type
+            let damage = 1; // Default damage for basic alien
+            
+            // Check alien type and set appropriate damage
+            switch (alien.texture.key) {
+                case 'alien':
+                    damage = 1;
+                    break;
+                case 'alien2':
+                    damage = 2;
+                    break;
+                case 'alien3':
+                    damage = 3;
+                    break;
+                case 'alien3-boss':
+                    damage = 5;
+                    break;
+            }
 
-            //update health text
+            // Decrement the health score by the damage amount
+            this.playerHealth -= damage;
+
+            // Update health text
             this.healthText.setText(`Health: ${this.playerHealth}`);
 
-            //make player briefly flash to indicate damage
+            // Make player briefly flash to indicate damage
             this.tweens.add({
                 targets: player,
                 alpha: 0.5,
@@ -901,15 +920,15 @@ class MainScene extends Phaser.Scene {
                 onComplete: () => {
                     player.alpha = 1;
                 }
-            })
+            });
 
-            //make player invulnerable briefly(1 second)
+            // Make player invulnerable briefly (1 second)
             this.invulnerable = true;
             this.time.delayedCall(this.invulnerabilityTime, () => {
                 this.invulnerable = false;
             });
 
-            //destroy the enemy that hit you
+            // Destroy the enemy that hit you
             alien.setActive(false);
             alien.setVisible(false);
         }
