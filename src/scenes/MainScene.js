@@ -57,7 +57,7 @@ class MainScene extends Phaser.Scene {
         this.currentWave = 1;
         this.waveTimer = 0;
         this.waveActive = false;
-        this.waveDuration = 180000; // 3 minutes in milliseconds
+        this.waveDuration = 120000; // 3 minutes in milliseconds
         this.waveMessageTimer = 0;
         this.betweenWavePause = 3000; // 3 seconds in milliseconds
         
@@ -134,30 +134,30 @@ class MainScene extends Phaser.Scene {
         // Create animation for aliens
         this.anims.create({
             key: "alien-animate",
-            frames: this.anims.generateFrameNumbers("alien", {start: 0, end: 35}),
-            frameRate: 18,
+            frames: this.anims.generateFrameNumbers("alien", {start: 0, end: 34}),
+            frameRate: 16,
             repeat: -1
         });
 
         // Create animations for other alien types
         this.anims.create({
             key: "alien2-animate",
-            frames: this.anims.generateFrameNumbers("alien2", {start: 0, end: 35}),
-            frameRate: 18,
+            frames: this.anims.generateFrameNumbers("alien2", {start: 0, end: 3}),
+            frameRate: 8,
             repeat: -1
         });
         
         this.anims.create({
             key: "alien3-animate",
-            frames: this.anims.generateFrameNumbers("alien3", {start: 0, end: 35}),
-            frameRate: 18,
+            frames: this.anims.generateFrameNumbers("alien3", {start: 0, end: 29}),
+            frameRate: 15,
             repeat: -1
         });
         
         this.anims.create({
             key: "alien3-boss-animate",
-            frames: this.anims.generateFrameNumbers("alien3-boss", {start: 0, end: 35}),
-            frameRate: 18,
+            frames: this.anims.generateFrameNumbers("alien3-boss", {start: 0, end: 29}),
+            frameRate: 15,
             repeat: -1
         });
 
@@ -167,7 +167,6 @@ class MainScene extends Phaser.Scene {
             defaultKey: "alien",
             maxSize: this.settings.maxAliens,
             createCallback: (alien) => {
-                alien.setScale(0.5);
                 alien.body.setSize(alien.width * 0.8, alien.height * 0.8, true);
                 alien.play('alien-animate');
             }
@@ -788,6 +787,24 @@ class MainScene extends Phaser.Scene {
         
         if (!alien) return;
         
+        // Set different scales based on alien type
+        switch (alienType) {
+            case 'alien':
+                alien.setScale(0.5);  // Original size for basic alien
+                break;
+            case 'alien2':
+                alien.setScale(0.6);  // Slightly larger for wave 2 alien
+                break;
+            case 'alien3':
+                alien.setScale(0.6);  // Even larger for wave 3 alien
+                break;
+            case 'alien3-boss':
+                alien.setScale(0.6);  // Largest for boss alien
+                break;
+            default:
+                alien.setScale(0.5);  // Default size
+        }
+        
         // Set alien health based on type
         this.setAlienHealth(alien, alienType);
         
@@ -847,10 +864,10 @@ class MainScene extends Phaser.Scene {
                 health = 2;
                 break;
             case 'alien3':
-                health = 3;
+                health = 4;
                 break;
             case 'alien3-boss':
-                health = 4;
+                health = 7;
                 break;
             default:
                 health = 1;
