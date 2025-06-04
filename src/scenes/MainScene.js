@@ -835,6 +835,13 @@ class MainScene extends Phaser.Scene {
             alien.dirY = -1;
             alien.setVelocity(0, -alien.speed);
         }
+        
+        // Randomly assign a curved movement pattern
+        if (alien.movementPattern === 'curved') {
+            const curveStyles = ['orbit', 'sine', 'spiral'];
+            alien.curveStyle = Phaser.Math.RND.pick(curveStyles);
+            alien.curveOffset = Math.random() * Math.PI * 2;
+        }
     }
 
     determineAlienType() {
@@ -948,6 +955,112 @@ class MainScene extends Phaser.Scene {
             // Destroy the enemy that hit you
             alien.setActive(false);
             alien.setVisible(false);
+        }
+    }
+
+    // Replace the existing moveAlienCurved with these three curved movement patterns
+    moveAlienCurved(alien) {
+        switch(alien.curveStyle) {
+            case 'orbit':
+                this.moveAlienOrbit(alien);
+                break;
+            case 'sine':
+                this.moveAlienSineWave(alien);
+                break;
+            case 'spiral':
+                this.moveAlienSpiral(alien);
+                break;
+        }
+    }
+
+    moveAlienOrbit(alien) {
+        // Orbiting curved movement
+        let dx = this.player.x - alien.x;
+        let dy = this.player.y - alien.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance > 0) {
+            dx = dx / distance;
+            dy = dy / distance;
+            
+            // Strong perpendicular force for orbital movement
+            const perpX = -dy * 1.2;
+            const perpY = dx * 1.2;
+            
+            dx += perpX * alien.curveDir;
+            dy += perpY * alien.curveDir;
+            
+            const newDist = Math.sqrt(dx * dx + dy * dy);
+            if (newDist > 0) {
+                dx = dx / newDist;
+                dy = dy / newDist;
+            }
+            
+            alien.dirX = dx;
+            alien.dirY = dy;
+        }
+    }
+
+    moveAlienSineWave(alien) {
+        // Sine wave curved movement
+        let dx = this.player.x - alien.x;
+        let dy = this.player.y - alien.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance > 0) {
+            dx = dx / distance;
+            dy = dy / distance;
+            
+            // Add sine wave pattern
+            const time = this.time.now * 0.002;
+            const amplitude = 1.5;
+            const wave = Math.sin(time + alien.curveOffset) * amplitude;
+            
+            // Apply wave perpendicular to movement direction
+            const perpX = -dy * wave;
+            const perpY = dx * wave;
+            
+            dx += perpX;
+            dy += perpY;
+            
+            const newDist = Math.sqrt(dx * dx + dy * dy);
+            if (newDist > 0) {
+                dx = dx / newDist;
+                dy = dy / newDist;
+            }
+            
+            alien.dirX = dx;
+            alien.dirY = dy;
+        }
+    }
+
+    moveAlienSpiral(alien) {
+        // Spiral curved movement
+        let dx = this.player.x - alien.x;
+        let dy = this.player.y - alien.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance > 0) {
+            dx = dx / distance;
+            dy = dy / distance;
+            
+            // Add spiral pattern
+            const time = this.time.now * 0.001;
+            const spiralForce = Math.min(distance / 200, 1.0); // Stronger spiral when further away
+            const perpX = -dy * spiralForce;
+            const perpY = dx * spiralForce;
+            
+            dx += perpX * alien.curveDir * (1 + Math.sin(time + alien.curveOffset));
+            dy += perpY * alien.curveDir * (1 + Math.cos(time + alien.curveOffset));
+            
+            const newDist = Math.sqrt(dx * dx + dy * dy);
+            if (newDist > 0) {
+                dx = dx / newDist;
+                dy = dy / newDist;
+            }
+            
+            alien.dirX = dx;
+            alien.dirY = dy;
         }
     }
 }
