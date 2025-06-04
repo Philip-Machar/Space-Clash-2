@@ -7,6 +7,9 @@ import thrustImg from "../assets/images/thrust.png";
 import spaceStationImg from "../assets/images/space-station.png";
 import planetImg from "../assets/images/planet.png";
 import asteroidImg from "../assets/images/asteroid.png";
+import alien2Img from "../assets/images/alien2.png";
+import alien3Img from "../assets/images/alien3.png";
+import alien3BossImg from "../assets/images/alien3-boss.png";
 
 class MainScene extends Phaser.Scene {
     constructor() {
@@ -49,6 +52,23 @@ class MainScene extends Phaser.Scene {
             bulletFireRate: 200,
             enemySpawnRate: [1000, 3000]
         }
+
+        // Wave system properties
+        this.currentWave = 1;
+        this.waveTimer = 0;
+        this.waveActive = false;
+        this.waveDuration = 180000; // 3 minutes in milliseconds
+        this.waveMessageTimer = 0;
+        this.betweenWavePause = 3000; // 3 seconds in milliseconds
+        
+        // Alien health tracking
+        this.alienHealth = new Map();
+        
+        // Wave text display
+        this.waveText = null;
+
+        // Transitioning flag to prevent multiple wave transitions
+        this.transitioning = false;
     }
 
     preload() {
@@ -62,6 +82,18 @@ class MainScene extends Phaser.Scene {
         this.load.image("station", spaceStationImg);
         this.load.image("planet", planetImg);
         this.load.image("asteroid", asteroidImg);
+        this.load.spritesheet("alien2", alien2Img, {
+            frameWidth: 128,
+            frameHeight: 128
+        });
+        this.load.spritesheet("alien3", alien3Img, {
+            frameWidth: 128,
+            frameHeight: 128
+        });
+        this.load.spritesheet("alien3-boss", alien3BossImg, {
+            frameWidth: 128,
+            frameHeight: 128
+        });
     }
 
     create() {
@@ -103,6 +135,28 @@ class MainScene extends Phaser.Scene {
         this.anims.create({
             key: "alien-animate",
             frames: this.anims.generateFrameNumbers("alien", {start: 0, end: 35}),
+            frameRate: 18,
+            repeat: -1
+        });
+
+        // Create animations for other alien types
+        this.anims.create({
+            key: "alien2-animate",
+            frames: this.anims.generateFrameNumbers("alien2", {start: 0, end: 35}),
+            frameRate: 18,
+            repeat: -1
+        });
+        
+        this.anims.create({
+            key: "alien3-animate",
+            frames: this.anims.generateFrameNumbers("alien3", {start: 0, end: 35}),
+            frameRate: 18,
+            repeat: -1
+        });
+        
+        this.anims.create({
+            key: "alien3-boss-animate",
+            frames: this.anims.generateFrameNumbers("alien3-boss", {start: 0, end: 35}),
             frameRate: 18,
             repeat: -1
         });
@@ -151,8 +205,35 @@ class MainScene extends Phaser.Scene {
             fill: "#ffffff",
             stroke: "#000000",
             strokeThickness: 2
-        })
+        });
         
+        // Create wave text display
+        this.waveText = this.add.text(
+            this.cameras.main.centerX,
+            this.cameras.main.centerY,
+            '',
+            {
+                fontSize: '48px',
+                fill: '#ffffff',
+                stroke: '#000000',
+                strokeThickness: 4
+            }
+        ).setOrigin(0.5).setDepth(1000).setVisible(false);
+
+        // Add wave counter text
+        this.waveCounterText = this.add.text(
+            20, 100,  // Position below health and kills counter
+            'Wave: 1/3',
+            {
+                fontSize: "24px",
+                fill: "#ffffff",
+                stroke: "#000000",
+                strokeThickness: 2
+            }
+        );
+
+        // Start wave system
+        this.startWave(1);
     }
 
     createStarField() {
@@ -429,6 +510,9 @@ class MainScene extends Phaser.Scene {
             }
             return true;
         });
+
+        // Update wave system
+        this.updateWaveSystem(time);
     }
 
     handleShipMovement() {
@@ -616,13 +700,66 @@ class MainScene extends Phaser.Scene {
         });
     }
 
+    startWave(waveNumber) {
+        this.currentWave = waveNumber;
+        this.waveActive = true;
+        this.waveTimer = this.time.now + this.waveDuration;
+        
+        // Update wave counter text
+        this.waveCounterText.setText(`Wave: ${this.currentWave}/3`);
+        
+        // Display wave start message
+        this.showWaveMessage(`Wave ${waveNumber} Started!`, 2000);
+    }
+
+    showWaveMessage(message, duration) {
+        this.waveText.setText(message);
+        this.waveText.setVisible(true);
+        this.time.delayedCall(duration, () => {
+            this.waveText.setVisible(false);
+        });
+    }
+
+    handleWaveCompletion() {
+        if (this.currentWave < 3) {
+            this.showWaveMessage(`Wave ${this.currentWave} Complete!`, 2000);
+            
+            // Store current wave number before transition
+            const completedWave = this.currentWave;
+            
+            // Wait for 3 seconds before starting next wave
+            this.time.delayedCall(this.betweenWavePause, () => {
+                // Start the next wave
+                this.startWave(completedWave + 1);
+                this.transitioning = false;
+            });
+        } else {
+            this.showWaveMessage('Aliens Annihilated!', 3000);
+            this.transitioning = false;
+        }
+    }
+
+    updateWaveSystem(time) {
+        // If wave is not active
+        if (!this.waveActive) {
+            // Only proceed if all aliens are dead and we're not already transitioning
+            if (this.aliens.countActive() === 0 && !this.transitioning) {
+                this.transitioning = true;
+                this.handleWaveCompletion();
+            }
+            return;
+        }
+
+        // Check if wave duration is over
+        if (time > this.waveTimer) {
+            this.waveActive = false;
+        }
+    }
+
     spawnEnemy() {
-        // Check if we've reached max aliens before spawning more
-        if (this.aliens.countActive(true) >= this.settings.maxAliens) return;
+        if (!this.waveActive || this.aliens.countActive(true) >= this.settings.maxAliens) return;
         
-        //Choose a random side to spawn from (0: top, 1: right, 2: bottom, 3: left)
         const side = Phaser.Math.Between(0, 3);
-        
         let x, y;
         
         //Determine spawn position based on side
@@ -645,16 +782,20 @@ class MainScene extends Phaser.Scene {
                 break;
         }
         
-        //Create alien using object pooling
-        const alien = this.aliens.get(x, y, 'alien');
+        //Determine alien type based on current wave
+        let alienType = this.determineAlienType();
+        const alien = this.aliens.get(x, y, alienType);
         
-        if (!alien) return; // No aliens available in the pool
+        if (!alien) return;
+        
+        // Set alien health based on type
+        this.setAlienHealth(alien, alienType);
         
         alien.setActive(true);
         alien.setVisible(true);
         
-        // Start animation on this alien
-        alien.play('alien-animate');
+        // Start animation based on alien type
+        alien.play(`${alienType}-animate`);
         
         // Set movement properties
         alien.speed = Phaser.Math.Between(50, 90);
@@ -679,19 +820,67 @@ class MainScene extends Phaser.Scene {
         }
     }
 
-    bulletHitAlien(bullet, alien) {
-        if (!bullet.active || !alien.active) {
-            return;
+    determineAlienType() {
+        if (this.currentWave === 1) {
+            // Wave 1: only type 1 aliens
+            return 'alien';
+        } else if (this.currentWave === 2) {
+            // Wave 2: 50/50 mix of only type 1 and 2 aliens
+            return Math.random() < 0.5 ? 'alien' : 'alien2';
+        } else {
+            // Wave 3: distribution of all types (70% wave 1/2, 30% wave 3)
+            const rand = Math.random();
+            if (rand < 0.35) return 'alien';
+            if (rand < 0.7) return 'alien2';
+            if (rand < 0.9) return 'alien3';
+            return 'alien3-boss';
         }
+    }
+
+    setAlienHealth(alien, type) {
+        let health;
+        switch (type) {
+            case 'alien':
+                health = 1;
+                break;
+            case 'alien2':
+                health = 2;
+                break;
+            case 'alien3':
+                health = 3;
+                break;
+            case 'alien3-boss':
+                health = 4;
+                break;
+            default:
+                health = 1;
+        }
+        this.alienHealth.set(alien, health);
+    }
+
+    bulletHitAlien(bullet, alien) {
+        if (!bullet.active || !alien.active) return;
 
         bullet.setActive(false);
         bullet.setVisible(false);
         
-        alien.setActive(false);
-        alien.setVisible(false);
-
-        this.deadAlienCount += 1;
-        this.deadAlienCountText.setText(`Aliens killed: ${this.deadAlienCount}`);
+        let health = this.alienHealth.get(alien) || 1;
+        health--;
+        
+        if (health <= 0) {
+            alien.setActive(false);
+            alien.setVisible(false);
+            this.alienHealth.delete(alien);
+            this.deadAlienCount++;
+            this.deadAlienCountText.setText(`Aliens killed: ${this.deadAlienCount}`);
+            
+            // Check if wave is complete
+            if (!this.waveActive && this.aliens.countActive() === 0) {
+                this.handleWaveCompletion();
+            }
+        } else {
+            this.alienHealth.set(alien, health);
+        }
     }
 
     alienHitPlayer(player, alien) {
